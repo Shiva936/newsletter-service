@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN go build -o newsletter-web ./cmd/server
+RUN go build -o newsletter-web ./cmd/web
 
 # Final image
 FROM alpine:latest
@@ -13,5 +13,6 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/newsletter-web .
+COPY --from=builder /app/env ./env
 
 CMD ["./newsletter-web"]

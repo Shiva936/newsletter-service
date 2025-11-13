@@ -2,6 +2,52 @@
 
 set -e
 
+MIGRATION_DIR="./migration/sql"
+DB_URL="postgres://postgres:postgres@localhost:5432/newsletter_db?sslmode=disable"
+
+function run_migration() {
+  local command=${1:-up}
+  
+  # Override with environment variable if set
+  if [ ! -z "$DATABASE_URL" ]; then
+    DB_URL="$DATABASE_URL"
+  fi
+
+  # Check if Goose is installed
+  if ! command -v goose &> /dev/null; then
+    echo "Goose is not installed. Installing..."
+    go install github.com/pressly/goose/v3/cmd/goose@latest
+  fi
+
+  echo "Running migration: $command"
+  echo "Database: $DB_URL"
+  echo "Migration dir: $MIGRATION_DIR"
+
+  case $command in
+    up)
+      goose -dir "$MIGRATION_DIR" postgres "$DB_URL" up
+      ;;
+    down)
+      goose -dir "$MIGRATION_DIR" postgres "$DB_URL" down
+      ;;
+    status)
+      goose -dir "$MIGRATION_DIR" postgres "$DB_URL" status
+      ;;
+    version)
+      goose -dir "$MIGRATION_DIR" postgres "$DB_URL" version
+      ;;
+    reset)
+      goose -dir "$MIGRATION_DIR" postgres "$DB_URL" reset
+      ;;
+    *)
+      echo "Migration usage: $0 migrate [up|down|status|version|reset]"
+      exit 1
+      ;;
+  esac
+
+  echo "Migration completed successfully!"
+}
+
 function setup() {
   echo "Starting local setup for newsletter service..."
 
@@ -32,12 +78,9 @@ function setup() {
   echo "Waiting for Postgres and Redis to be ready..."
   sleep 10
 
-  # Run migration container
-  echo "Running migration container to setup DB schema..."
-  docker build -f scripts/Dockerfile.migration -t newsletter-service-migration .
-  docker run --rm --name newsletter-migration --network newsletter-net -e DB_STRING="postgres://postgres:postgres@newsletter-postgres:5432/newsletter_db?sslmode=disable" newsletter-service-migration
-
-  echo "Migration completed."
+  # Run migrations using Goose directly
+  echo "Running database migrations..."
+  run_migration up
 
   echo "Building and running backend server container..."
   docker build -f scripts/Dockerfile.web -t newsletter-web .
@@ -49,6 +92,7 @@ function setup() {
 
   echo "Backend server running on http://localhost:8080"
   echo "To stop containers, run: ./scripts/local.sh clean"
+  echo "To run migrations, use: ./scripts/local.sh migrate [up|down|status|version|reset]"
 }
 
 function clean() {
@@ -62,7 +106,19 @@ if [[ "$1" == "setup" ]]; then
   setup
 elif [[ "$1" == "clean" ]]; then
   clean
+elif [[ "$1" == "migrate" ]]; then
+  run_migration "$2"
 else
-  echo "Usage: $0 {setup|clean}"
+  echo "Usage: $0 {setup|clean|migrate [up|down|status|version|reset]}"
+  echo ""
+  echo "Commands:"
+  echo "  setup   - Start local development environment with containers and run migrations"
+  echo "  clean   - Stop and remove all containers"
+  echo "  migrate - Run database migrations (default: up)"
+  echo ""
+  echo "Migration examples:"
+  echo "  $0 migrate up      # Run all pending migrations"
+  echo "  $0 migrate down    # Rollback last migration"
+  echo "  $0 migrate status  # Check migration status"
   exit 1
 fi

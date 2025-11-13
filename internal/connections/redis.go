@@ -1,4 +1,4 @@
-package database
+package connections
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
-	"github.com/Shiva936/newsletter-service/internal/config"
+	"newsletter-service/internal/config"
 )
 
 var ctx = context.Background()
@@ -15,8 +15,8 @@ var ctx = context.Background()
 func NewRedisClient(cfg config.RedisConfig) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		Password: "", // no password by default; update if needed
-		DB:       0,  // default DB
+		Password: cfg.Password,
+		DB:       cfg.DB,
 	})
 
 	// Test connection

@@ -1,6 +1,14 @@
+# Default configuration for newsletter service
+env = "dev"
+
 [auth]
     username = "admin"
     password = "changeme"
+
+[scheduler]
+    username = "scheduler"
+    password = "scheduler123"
+    enabled = true
 
 [database]
     host = "localhost"
@@ -9,10 +17,32 @@
     password = "postgres"
     name = "newsletter_db"
     sslmode = "disable"
+    auto_migrate = false
+    migrations_path = "migration/sql"
 
 [redis]
     host = "localhost"
     port = 6379
+    password = ""
+    db = 0
 
 [worker]
     max_async_process = 10
+
+[smtp]
+    host = "smtp.example.com"
+    port = 587
+    username = "your_smtp_username"
+    password = "your_smtp_password"
+    from = "no-reply@example.com"
+
+[rate_limit]
+    enabled = true
+    storage = "redis" # "redis" or "memory"
+    [rate_limit.default]
+        enabled = true
+        bucket_size = 100
+        refill_size = 10
+        refill_duration = "1m"
+        identify_by = "ip"     # "ip" or "api_key"
+    [rate_limit.routes]

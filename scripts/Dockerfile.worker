@@ -13,5 +13,6 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/newsletter-worker .
+COPY --from=builder /app/env ./env
 
 CMD ["./newsletter-worker"]

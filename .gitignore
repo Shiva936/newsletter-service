@@ -1,6 +1,5 @@
 # Binaries
-/newsletter-web
-/newsletter-worker
+/bin/
 *.exe
 *.exe~
 *.dll

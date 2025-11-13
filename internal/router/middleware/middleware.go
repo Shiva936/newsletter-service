@@ -1,52 +1,69 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
-	"time"
+	"strings"
+
+	"newsletter-service/internal/config"
+
+	"github.com/gin-gonic/gin"
 )
 
-// BasicAuth middleware protects routes with given username and password
-func BasicAuth(username, password string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			user, pass, ok := r.BasicAuth()
-			if !ok || user != username || pass != password {
-				w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte("Unauthorized\n"))
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-// LoggingMiddleware logs incoming requests and their responses including duration
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		// Use a ResponseWriter wrapper to capture status code
-		lrw := &loggingResponseWriter{w, http.StatusOK}
-
-		next.ServeHTTP(lrw, r)
-
-		duration := time.Since(start)
-		log.Printf("%s %s %d %s\n", r.Method, r.RequestURI, lrw.statusCode, duration)
-		
-        //TODO: Implemnet api metrices push to a bucket for monitoring
+// AuthMiddleware provides basic authentication
+func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
+	return gin.BasicAuth(gin.Accounts{
+		cfg.Auth.Username: cfg.Auth.Password,
 	})
 }
 
-// loggingResponseWriter wraps http.ResponseWriter to capture status code
-type loggingResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
+// SchedulerAuthMiddleware provides separate authentication for scheduler APIs
+func SchedulerAuthMiddleware(cfg *config.Config) gin.HandlerFunc {
+	return gin.HandlerFunc(func(c *gin.Context) {
+		// Skip if scheduler auth is disabled
+		if !cfg.Scheduler.Enabled {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":   "Service unavailable",
+				"message": "Scheduler service is disabled",
+			})
+			c.Abort()
+			return
+		}
+
+		// Check for basic auth header
+		auth := c.GetHeader("Authorization")
+		if !strings.HasPrefix(auth, "Basic ") {
+			c.Header("WWW-Authenticate", "Basic realm=\"Scheduler API\"")
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "Unauthorized",
+				"message": "Scheduler API requires basic authentication",
+			})
+			c.Abort()
+			return
+		}
+
+		// Use Gin's built-in basic auth with scheduler credentials
+		accounts := gin.Accounts{
+			cfg.Scheduler.Username: cfg.Scheduler.Password,
+		}
+
+		basicAuth := gin.BasicAuth(accounts)
+		basicAuth(c)
+	})
 }
 
-// WriteHeader captures the status code for logging
-func (lrw *loggingResponseWriter) WriteHeader(code int) {
-	lrw.statusCode = code
-	lrw.ResponseWriter.WriteHeader(code)
+// CORSMiddleware adds CORS headers
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-API-Key")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
 }
