@@ -32,6 +32,7 @@ Thumbs.db
 /vendor/
 
 # Temporary files
+/tmp/
 *.tmp
 *.temp
 
