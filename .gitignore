@@ -1,0 +1,42 @@
+# Binaries
+/newsletter-web
+/newsletter-worker
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Output of go build
+/build/
+
+# IDE/editor folders
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Dependency directories
+/vendor/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Go modules
+go.sum
+
+# Test binary
+*.test
