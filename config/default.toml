@@ -1,0 +1,19 @@
+[auth]
+username = "admin"
+password = "password123"
+
+[database]
+host = "localhost"
+port = 5432
+user = "postgres"
+password = "postgres"
+name = "newsletter_db"
+sslmode = "disable"
+
+[redis]
+host = "localhost"
+port = 6379
+
+[worker]
+max_async_process = 10
+
