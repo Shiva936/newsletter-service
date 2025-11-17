@@ -18,7 +18,7 @@ type Config struct {
 	Database  DatabaseConfig  `toml:"database"`
 	Redis     RedisConfig     `toml:"redis"`
 	Worker    WorkerConfig    `toml:"worker"`
-	SMTP      SMTPConfig      `toml:"smtp"`
+	Providers ProvidersConfig `toml:"providers"`
 	RateLimit RateLimitConfig `toml:"rate_limit"`
 }
 
@@ -69,12 +69,39 @@ type RateLimitRule struct {
 	Enabled        bool          `toml:"enabled"`
 }
 
+type ProvidersConfig struct {
+	Enabled       []string                      `toml:"enabled"`
+	LoadBalancing string                        `toml:"load_balancing"` // "round_robin", "weighted", "least_load"
+	SMTP          map[string]SMTPProviderConfig `toml:"smtp"`
+	API           map[string]APIProviderConfig  `toml:"api"`
+}
+
 type SMTPConfig struct {
 	Host     string `toml:"host"`
 	Port     int    `toml:"port"`
 	Username string `toml:"username"`
 	Password string `toml:"password"`
 	From     string `toml:"from"`
+}
+
+type SMTPProviderConfig struct {
+	Host             string `toml:"host"`
+	Port             int    `toml:"port"`
+	Username         string `toml:"username"`
+	Password         string `toml:"password"`
+	From             string `toml:"from"`
+	Priority         int    `toml:"priority"`
+	MaxEmailsPerHour int    `toml:"max_emails_per_hour"`
+}
+
+type APIProviderConfig struct {
+	Endpoint         string `toml:"endpoint"`
+	Token            string `toml:"token"`
+	From             string `toml:"from"`
+	Priority         int    `toml:"priority"`
+	MaxEmailsPerHour int    `toml:"max_emails_per_hour"`
+	BulkEnabled      bool   `toml:"bulk_enabled"`
+	MaxBatchSize     int    `toml:"max_batch_size"`
 }
 
 // LoadDefaultConfig loads default config from env/default.toml
@@ -168,4 +195,27 @@ func updateFieldValue(field reflect.Value, envVal string) {
 			}
 		}
 	}
+}
+
+// SendGridConfig represents SendGrid email provider configuration
+type SendGridConfig struct {
+	APIKey           string `toml:"api_key"`
+	From             string `toml:"from"`
+	Enabled          bool   `toml:"enabled"`
+	Priority         int    `toml:"priority"`
+	MaxEmailsPerHour int    `toml:"max_emails_per_hour"`
+	MaxBatchSize     int    `toml:"max_batch_size"`
+	BulkEnabled      bool   `toml:"bulk_enabled"`
+}
+
+// MailtrapConfig represents Mailtrap email provider configuration
+type MailtrapConfig struct {
+	APIToken         string `toml:"api_token"`
+	BulkEndpoint     string `toml:"bulk_endpoint"`
+	From             string `toml:"from"`
+	Enabled          bool   `toml:"enabled"`
+	Priority         int    `toml:"priority"`
+	MaxEmailsPerHour int    `toml:"max_emails_per_hour"`
+	MaxBatchSize     int    `toml:"max_batch_size"`
+	BulkEnabled      bool   `toml:"bulk_enabled"`
 }

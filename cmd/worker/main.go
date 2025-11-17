@@ -7,7 +7,6 @@ import (
 
 	"newsletter-service/internal/config"
 	"newsletter-service/internal/connections"
-	"newsletter-service/internal/providers"
 	"newsletter-service/internal/schedulers"
 	"newsletter-service/internal/services/content"
 	"newsletter-service/internal/services/notification"
@@ -42,16 +41,7 @@ func main() {
 	}
 	defer redisClient.Close()
 
-	// Initialize email provider
-	providerFactory := providers.NewFactory()
-	smtpConfig := providers.NewSMTPConfigFromAppConfig(cfg.SMTP)
-	emailProvider, err := providerFactory.CreateProvider(smtpConfig)
-	if err != nil {
-		log.Fatalf("Failed to create email provider: %v", err)
-	}
-	log.Printf("Initialized email provider: %s", emailProvider.GetProviderName())
-
-	// Initialize repo
+	// Initialize repositories
 	contentRepo := content.NewRepository(db)
 	subscriberRepo := subscriber.NewRepository(db)
 	topicRepo := topic.NewRepository(db)
@@ -60,10 +50,16 @@ func main() {
 	topicService := topic.NewService(topicRepo)
 	contentService := content.NewService(contentRepo)
 	subscriberService := subscriber.NewServiceWithTopic(subscriberRepo, topicService)
-	notificationService := notification.NewService(db, contentService, subscriberService)
 
-	// Initialize scheduler with provider
-	scheduler := schedulers.NewNotificationSchedulerWithProvider(contentService, notificationService, emailProvider)
+	// Initialize notification service with multi-provider support
+	notificationService, err := notification.NewServiceWithProviders(db, contentService, subscriberService, cfg)
+	if err != nil {
+		log.Fatalf("Failed to create notification service with providers: %v", err)
+	}
+	log.Printf("Initialized notification service with multi-provider support")
+
+	// Initialize scheduler
+	scheduler := schedulers.NewNotificationScheduler(contentService, notificationService)
 
 	// Start worker
 	log.Println("Worker started, checking for pending notifications every minute...")

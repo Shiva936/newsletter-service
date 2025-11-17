@@ -2,47 +2,82 @@
 env = "dev"
 
 [auth]
-    username = "admin"
-    password = "changeme"
+username = "admin"
+password = "changeme"
 
 [scheduler]
-    username = "scheduler"
-    password = "scheduler123"
-    enabled = true
+username = "scheduler"
+password = "scheduler123"
+enabled = true
 
 [database]
-    host = "localhost"
-    port = 5432
-    user = "postgres"
-    password = "postgres"
-    name = "newsletter_db"
-    sslmode = "disable"
-    auto_migrate = false
-    migrations_path = "migration/sql"
+host = "localhost"
+port = 5432
+user = "postgres"
+password = "postgres"
+name = "newsletter_db"
+sslmode = "disable"
+auto_migrate = false
+migrations_path = "migration/sql"
 
 [redis]
-    host = "localhost"
-    port = 6379
-    password = ""
-    db = 0
+host = "localhost"
+port = 6379
+password = ""
+db = 0
 
 [worker]
-    max_async_process = 10
+max_async_process = 10
 
-[smtp]
-    host = "smtp.example.com"
-    port = 587
-    username = "your_smtp_username"
-    password = "your_smtp_password"
-    from = "no-reply@example.com"
+[providers]
+enabled = ["smtp_primary", "mailtrap"]
+load_balancing = "round_robin"         # "round_robin", "weighted", "least_load"
+
+[providers.smtp]
+[providers.smtp.smtp_primary]
+host = "smtp.example.com"
+port = 587
+username = "your_smtp_username"
+password = "your_smtp_password"
+from = "no-reply@example.com"
+priority = 1
+max_emails_per_hour = 1000
+
+[providers.smtp.smtp_backup]
+host = "smtp2.example.com"
+port = 587
+username = "your_smtp_username_backup"
+password = "your_smtp_password_backup"
+from = "no-reply@example.com"
+priority = 2
+max_emails_per_hour = 500
+
+[providers.api]
+[providers.api.mailtrap]
+endpoint = "https://bulk.api.mailtrap.io/api/send"
+token = "your_mailtrap_api_token"
+from = "no-reply@example.com"
+priority = 3
+max_emails_per_hour = 5000
+bulk_enabled = true
+max_batch_size = 1000
+
+[providers.api.sendgrid]
+endpoint = "https://api.sendgrid.com/v3/mail/send"
+token = "SG.your_sendgrid_api_key"
+from = "no-reply@example.com"
+priority = 1
+max_emails_per_hour = 10000
+bulk_enabled = true
+max_batch_size = 1000
 
 [rate_limit]
-    enabled = true
-    storage = "redis" # "redis" or "memory"
-    [rate_limit.default]
-        enabled = true
-        bucket_size = 100
-        refill_size = 10
-        refill_duration = "1m"
-        identify_by = "ip"     # "ip" or "api_key"
-    [rate_limit.routes]
+enabled = true
+storage = "redis" # "redis" or "memory"
+[rate_limit.default]
+enabled = true
+bucket_size = 100
+refill_size = 10
+refill_duration = "1m"
+identify_by = "ip"     # "ip" or "api_key"
+[rate_limit.routes]
