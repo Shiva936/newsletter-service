@@ -18,12 +18,16 @@ This guide covers setting up the newsletter service on your local machine for de
 
 The fastest way to get started is using our automated setup script:
 
+The fastest way to get started is using our automated setup script. The script works on both Linux/Unix and Windows systems:
+
+**For Linux/Mac/Unix systems:**
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-username/newsletter-service.git
 cd newsletter-service
 
-# Make setup script executable (Linux/Mac)
+# Make setup script executable
 chmod +x scripts/local.sh
 
 # Start everything (PostgreSQL, Redis, migrations, web, worker)
@@ -33,6 +37,51 @@ chmod +x scripts/local.sh
 ./scripts/local.sh clean
 ```
 
+**For Windows systems:**
+
+_Prerequisites: Git for Windows must be installed (includes Git Bash)_
+
+```bash
+# Open Git Bash (not Command Prompt or PowerShell)
+# Navigate to your project directory
+cd /d/Projects/newsletter-service
+
+# Make setup script executable
+chmod +x scripts/local.sh
+
+# Start everything (PostgreSQL, Redis, migrations, web, worker)
+./scripts/local.sh setup
+
+# When done, clean up
+./scripts/local.sh clean
+```
+
+**Alternative Windows method (if Git Bash is not preferred):**
+
+If you prefer to use Command Prompt or PowerShell, you can run the bash script through Git Bash programmatically:
+
+**Command Prompt:**
+
+```cmd
+# Setup
+"<path_to_git>\bin\bash.exe" -c "./scripts/local.sh setup"
+
+# Clean up
+"<path_to_git>\bin\bash.exe" -c "./scripts/local.sh clean"
+```
+
+**PowerShell:**
+
+```powershell
+# Setup (use & operator for PowerShell)
+& "<path_to_git>\bin\bash.exe" -c "./scripts/local.sh setup"
+
+# Clean up
+& "<path_to_git>\bin\bash.exe" -c "./scripts/local.sh clean"
+```
+
+**Note:** Adjust the Git installation path if different on your system. Find your Git path with `where git` and replace `cmd\git.exe` with `bin\bash.exe`.
+
 **What this does:**
 
 - Starts PostgreSQL container on port 5432
@@ -41,6 +90,17 @@ chmod +x scripts/local.sh
 - Builds and starts web server on port 8080
 - Builds and starts background worker
 - Sets up Docker network for inter-service communication
+
+**📝 Note for Windows users:** Replace `<path_to_git>` with your actual Git installation path. To find it:
+
+```cmd
+# In Command Prompt or PowerShell
+where git
+# Look for the git.exe path, then replace 'cmd\git.exe' with 'bin\bash.exe'
+# Example: If git is at 'D:\Program Files\Git\cmd\git.exe'
+# Then use: 'D:\Program Files\Git\bin\bash.exe'
+# Common locations: 'C:\Program Files\Git' or 'C:\Program Files (x86)\Git'
+```
 
 ### 🔧 Manual Setup (Step by Step)
 
@@ -151,6 +211,8 @@ export RATE_LIMIT_STORAGE=redis
 
 **Option A: Using local script**
 
+**Linux/Mac/Unix:**
+
 ```bash
 # Run migrations
 ./scripts/local.sh migrate up
@@ -160,6 +222,35 @@ export RATE_LIMIT_STORAGE=redis
 
 # Rollback if needed
 ./scripts/local.sh migrate down
+```
+
+**Windows (Git Bash):**
+
+```bash
+# Open Git Bash and run:
+./scripts/local.sh migrate up
+
+# Check migration status
+./scripts/local.sh migrate status
+
+# Rollback if needed
+./scripts/local.sh migrate down
+```
+
+**Windows (Command Prompt/PowerShell):**
+
+```cmd
+# Command Prompt:
+"<path_to_git>\bin\bash.exe" -c "./scripts/local.sh migrate up"
+"<path_to_git>\bin\bash.exe" -c "./scripts/local.sh migrate status"
+"<path_to_git>\bin\bash.exe" -c "./scripts/local.sh migrate down"
+```
+
+```powershell
+# PowerShell (use & operator):
+& "<path_to_git>\bin\bash.exe" -c "./scripts/local.sh migrate up"
+& "<path_to_git>\bin\bash.exe" -c "./scripts/local.sh migrate status"
+& "<path_to_git>\bin\bash.exe" -c "./scripts/local.sh migrate down"
 ```
 
 **Option B: Direct Goose commands**
